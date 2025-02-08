@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaultify - Password Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            perspective: 1000px;
+        }
+        .card {
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: rotateY(5deg) rotateX(5deg) scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex justify-center items-center h-screen">
+    <div class="w-96 p-6 bg-gray-800 rounded-lg shadow-lg card">
+        <h2 class="text-xl font-bold mb-4 text-center">Vaultify</h2>
+        <input id="site" type="text" placeholder="Website" class="w-full p-2 mb-2 rounded bg-gray-700 text-white">
+        <input id="username" type="text" placeholder="Username" class="w-full p-2 mb-2 rounded bg-gray-700 text-white">
+        <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 rounded bg-gray-700 text-white">
+        <button onclick="savePassword()" class="w-full bg-blue-500 p-2 rounded">Save</button>
+        <h3 class="mt-4 text-lg">Saved Passwords:</h3>
+        <ul id="passwordList" class="mt-2"></ul>
+    </div>
 
+    <script>
+        function savePassword() {
+            const site = document.getElementById('site').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (!site || !username || !password) return;
+            
+            const entry = { site, username, password: btoa(password) }; 
+            let passwords = JSON.parse(localStorage.getItem('passwords')) || [];
+            passwords.push(entry);
+            localStorage.setItem('passwords', JSON.stringify(passwords));
+            displayPasswords();
+        }
+
+        function displayPasswords() {
+            const passwordList = document.getElementById('passwordList');
+            passwordList.innerHTML = '';
+            const passwords = JSON.parse(localStorage.getItem('passwords')) || [];
+            passwords.forEach((entry, index) => {
+                let maskedPassword = '*'.repeat(atob(entry.password).length);
+                passwordList.innerHTML += `<li class='bg-gray-700 p-2 rounded mt-2 flex justify-between items-center'>
+                    <div>
+                        <strong>${entry.site}</strong> - ${entry.username} - <span id='password-${index}'>${maskedPassword}</span>
+                    </div>
+                    <div>
+                        <button onclick='revealPassword(${index})' class='text-blue-400 mr-2'>View</button>
+                        <button onclick='deletePassword(${index})' class='text-red-500'>🗑</button>
+                    </div>
+                </li>`;
+            });
+        }
+
+        function revealPassword(index) {
+            let passwords = JSON.parse(localStorage.getItem('passwords')) || [];
+            let passwordSpan = document.getElementById(`password-${index}`);
+            if (passwordSpan.innerText.includes('*')) {
+                passwordSpan.innerText = atob(passwords[index].password);
+            } else {
+                passwordSpan.innerText = '*'.repeat(passwordSpan.innerText.length);
+            }
+        }
+
+        function deletePassword(index) {
+            let passwords = JSON.parse(localStorage.getItem('passwords')) || [];
+            passwords.splice(index, 1);
+            localStorage.setItem('passwords', JSON.stringify(passwords));
+            displayPasswords();
+        }
+
+        displayPasswords();
+    </script>
+</body>
+</html>

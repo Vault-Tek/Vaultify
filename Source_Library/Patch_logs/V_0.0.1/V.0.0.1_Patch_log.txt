@@ -1,0 +1,33 @@
+# Changelog
+
+## Version 0.0.1 - Initial Stable Deployment
+
+### Features
+- **Initial Stable Deployment:**
+  Rolled out the foundational architecture for a password management system with a secure, browser-hosted solution to handle password storage and retrieval. Ensured encrypted storage of user data without reliance on external cloud infrastructure.
+
+- **Credential Capture and Persistence:**
+  Implemented a reliable mechanism for capturing and persisting user credentials in the browser's local storage. User credentials are associated with website URLs and usernames, offering complete autonomy over their data without external server storage.
+
+- **Data Handling and Persistence:**
+  Credentials are securely stored in the browser's local storage with industry-standard encryption methodologies. All data is hashed and stored, ensuring only the end user can access their credentials, with a non-cloud, local-first approach to minimize security risks.
+
+- **User Experience Enhancement:**
+  The local storage model enhances user experience by eliminating reliance on third-party services. Passwords are immediately accessible without requiring an internet connection, providing faster access and ensuring data privacy.
+
+- **Basic User Interface (UI):**
+  A functional UI for adding, saving, and retrieving password entries, including website URLs, usernames, and passwords. The interface is intuitive, with a layout designed for ease of use, while ensuring data is stored in encrypted form.
+
+### Security
+- **Core Security Features:**
+  Introduced basic encryption using client-side hashing and obfuscation, with passwords encoded in base64. While base64 encoding provides basic protection, it serves as a placeholder for more advanced encryption methods (e.g., AES, RSA) to be implemented in future updates.
+
+### Stability and Testing
+- **Initial Debugging and Stability Testing:**
+  Focused on resolving bugs and ensuring seamless performance across different browsers. Optimized performance for reduced memory footprint and faster load times. The release underwent rigorous testing, including scenarios involving browser crashes, shutdowns, and network interruptions.
+
+### Future Roadmap
+- **Future Considerations and Enhancements:**
+  Planned improvements include stronger encryption algorithms, cloud synchronization (with user consent), integration with hardware security modules (e.g., Yubikeys), and a more polished UI with advanced search/filtering capabilities.
+
+---

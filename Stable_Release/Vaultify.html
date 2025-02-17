@@ -15,66 +15,62 @@
         .password-container {
             max-height: 300px;
             overflow-y: scroll;
-            scrollbar-width: none; /* For Firefox */
+            scrollbar-width: none;
         }
 
         .password-container::-webkit-scrollbar {
-            display: none; /* For Chrome, Safari, and Edge */
+            display: none;
         }
 
         .search-container {
-            display: none; /* Hidden by default */
+            display: none;
             margin-top: 10px;
         }
 
         .password-container li {
-            background-color: #1a202c; /* Original color */
+            background-color: #1a202c;
             padding: 12px;
-            border-radius: 8px; /* Rounded corners */
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Button Styles */
         .btn {
-            background-color: #2d3748; /* This is the grey color you want */
+            background-color: #2d3748;
             color: #edf2f7;
-            padding: 4px 10px;  /* Smaller padding */
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 0.75rem; /* Smaller font size */
+            font-size: 0.75rem;
             margin: 0 4px;
             border: none;
             cursor: pointer;
         }
 
         .btn-view {
-            background-color: #2d3748; /* Match the color of the password boxes */
+            background-color: #2d3748;
         }
 
         .btn-edit {
-            background-color: #2d3748; /* Match the color of the password boxes */
+            background-color: #2d3748;
         }
 
         .btn-delete {
-            background-color: #2d3748; /* Match the color of the password boxes */
+            background-color: #2d3748;
         }
 
-        /* Action Buttons Layout */
         .action-btns {
             display: flex;
             justify-content: flex-start;
             align-items: center;
         }
 
-        /* Make action buttons inline */
         .action-btns button {
             margin-right: 5px; /* Adjust spacing between buttons */
         }
 
-        /* No Match Card */
         .no-match-card {
             background-color: #1a202c;
             padding: 12px;

@@ -13,9 +13,9 @@ Vaultify is a locally hosted password manager designed for security, privacy, an
 
 ## Installation
 
-1. Download the raw file from the **Stable_Release** section.
+1. Download the latest release from the **Stable_Release** section.
 2. Extract the files to your desired location.
-3. Open `Vaultify.html` in your primary browser.
+3. Open `Vaultify.html` in your preferred browser.
 4. Use Vaultify to securely manage and retrieve your passwords.
 
 ## Security Measures
@@ -31,3 +31,4 @@ Vaultify is a locally hosted password manager designed for security, privacy, an
 - Use the search feature to quickly retrieve specific login details.
 
 Vaultify is the intellectual property of **Vault-Tek LLC DBA Vaultify**. Unauthorized distribution or modification of this software without permission is strictly prohibited.
+

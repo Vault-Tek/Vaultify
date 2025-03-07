@@ -1,8 +1,6 @@
 # Vaultify Password Manager (V.0.1.9)
 
-Vaultify is a locally hosted password manager designed to prioritize security, privacy, and ease of use. It operates entirely on the client-side, ensuring that sensitive data remains securely on your device. With advanced encryption protocols and a user-friendly interface, Vaultify offers a seamless and secure experience for managing your credentials.
-
-We are excited to announce that the Vaultify website is now live and accessible. Visit the official site for more information and to see Vaultify in action: [Vaultify Website](https://vaultify.pages.dev/).
+Vaultify is a locally hosted password manager designed to prioritize security, privacy, and ease of use. It operates entirely on the client-side, ensuring that sensitive data remains securely on your device. With advanced encryption protocols and a user-friendly interface, Vaultify offers a seamless and secure experience for managing your credentials. Be sure to check out our latest release on the [Vaultify Website](https://vaultify.pages.dev/).
 
 ## Features
 

@@ -4,7 +4,7 @@ Vaultify is a locally hosted password manager designed for security, privacy, an
 
 ![Version](https://img.shields.io/badge/version-v0.1.9-blue?style=flat-square)
 ![GitHub Downloads](https://img.shields.io/github/downloads/keeweb/keeweb/total?logo=github&logoColor=FFFFFF&label=Downloads&color=376892)
-![Contributors](https://img.shields.io/badge/contributors-12-green?style=flat-square)
+![Contributors](https://img.shields.io/badge/contributors-12-blue?style=flat-square)
 
 ## Features
 

@@ -1,0 +1,85 @@
+---
+
+### **Version 1.3.0**
+
+#### **Local-Only Hardened Vault Encryption, Per-Entry Tokenization, and Integrity-Verified AES-256-GCM**
+
+Vaultify 1.3.0 delivers the most significant leap forward in **local-only** credential protection since the app’s inception. This release integrates a **fully hardened, WebCrypto-powered AES-256-GCM encryption pipeline** combined with **PBKDF2-HMAC-SHA-256 key derivation at 250,000 iterations**—elevating offline brute-force resistance to an unprecedented threshold.
+
+Alongside these cryptographic advancements, 1.3.0 introduces **per-entry tokenization** and **integrity-verified decryption**, ensuring any tampered or improperly imported data is instantly detected and rejected.
+
+---
+
+### **Vault-Wide Local Security Enhancements**
+
+* **WebCrypto AES-256-GCM Core Upgrade**
+  All vault entries are now encrypted using **AES-256-GCM** from the browser’s built-in WebCrypto API—providing authenticated encryption with minimal performance overhead.
+
+* **PBKDF2-HMAC-SHA-256 Key Stretching**
+  The master password is converted into a 256-bit vault key using PBKDF2 with:
+
+  * **250,000 iterations**
+  * **Random 128-bit vault salt**
+  * Making offline guessing attacks computationally prohibitive even with state-level resources.
+
+* **Zero Master Key Persistence**
+  The derived vault key never touches disk or persistent memory; it is generated only in-session and destroyed on lock/logout.
+
+* **Per-Entry Initialization Vectors**
+  Every credential entry has a **unique, non-repeating 96-bit IV**, ensuring no two encryptions are ever alike—even for identical plaintext values.
+
+---
+
+### **Integrity & Tamper Detection Layer**
+
+* **Integrated GCM Authentication Tags**
+  Each encrypted entry includes an **authentication tag** generated during encryption, automatically validated at decryption to prevent altered or corrupted data from returning false values.
+
+* **Corrupt Entry Safeguard**
+  When imported data fails authentication, Vaultify will flag the item as **“corrupt”** rather than displaying partial or invalid credentials—shielding the user from trusting compromised information.
+
+---
+
+### **Secure Import/Export Architecture**
+
+* **Salt & IV Preservation**
+  Each exported entry retains its **own unique salt and IV**—allowing precise re-derivation of keys when restoring with the original master password.
+
+* **Master Password Dependency**
+  Imports now require the **exact same master password** used at export; incorrect keys will render entries unreadable.
+
+* **Metadata-Free Structure**
+  No URLs, usernames, or identifiers are stored in plaintext in the export file—ensuring complete metadata confidentiality.
+
+---
+
+### **Cryptographic Impact Assessment**
+
+With the 1.3.0 security model:
+
+* A brute-force attacker must attempt **PBKDF2 at 250k iterations** *per guess*, multiplied by the independent salts per vault.
+* AES-256-GCM with 96-bit IVs ensures encryption collisions are **cryptographically negligible**.
+* Authentication tags guarantee **tamper-evident** data integrity—no silent corruption possible.
+* Offline cracking of even one vault entry would require astronomical compute power, making targeted attacks impractical for any real-world adversary.
+
+---
+
+### **Zero-Trust Local-Only Compliance**
+
+* All encryption, decryption, and key derivation occur **entirely within the client browser**.
+* No credentials—raw or encrypted—ever leave the local environment unless the user explicitly exports.
+* Search, display, and edit operations all occur post-decryption **only in volatile memory**.
+
+---
+
+### **Looking Ahead: Vaultify 1.4.0+**
+
+Future releases will explore:
+
+* **Salt-included backup exports** for easier cross-device vault restoration without compromising security.
+* **Ephemeral session unlocking** via biometric or hardware key attestation.
+* **Encrypted indexing** for instant search across local-only encrypted data.
+
+Vaultify 1.3.0 sets the benchmark for **maximum-strength, local-first encryption**, combining **standards-compliant AES-256-GCM**, **PBKDF2 key stretching**, and **per-entry tokenization** into an integrity-hardened vault—without sacrificing the smooth UI, effects, and instant offline usability our users expect.
+
+---

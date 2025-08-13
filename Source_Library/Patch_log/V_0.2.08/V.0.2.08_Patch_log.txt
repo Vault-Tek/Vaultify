@@ -1,12 +1,12 @@
 ---
 
-### **Version 1.3.0**
+### **Version 0.2.08**
 
 #### **Local-Only Hardened Vault Encryption, Per-Entry Tokenization, and Integrity-Verified AES-256-GCM**
 
 Vaultify 1.3.0 delivers the most significant leap forward in **local-only** credential protection since the app’s inception. This release integrates a **fully hardened, WebCrypto-powered AES-256-GCM encryption pipeline** combined with **PBKDF2-HMAC-SHA-256 key derivation at 250,000 iterations**—elevating offline brute-force resistance to an unprecedented threshold.
 
-Alongside these cryptographic advancements, 1.3.0 introduces **per-entry tokenization** and **integrity-verified decryption**, ensuring any tampered or improperly imported data is instantly detected and rejected.
+Alongside these cryptographic advancements, v0.2.08 introduces **per-entry tokenization** and **integrity-verified decryption**, ensuring any tampered or improperly imported data is instantly detected and rejected.
 
 ---
 
@@ -81,5 +81,6 @@ Future releases will explore:
 * **Encrypted indexing** for instant search across local-only encrypted data.
 
 Vaultify 1.3.0 sets the benchmark for **maximum-strength, local-first encryption**, combining **standards-compliant AES-256-GCM**, **PBKDF2 key stretching**, and **per-entry tokenization** into an integrity-hardened vault—without sacrificing the smooth UI, effects, and instant offline usability our users expect.
+
 
 ---

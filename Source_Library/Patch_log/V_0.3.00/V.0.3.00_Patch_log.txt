@@ -1,0 +1,13 @@
+| Section / Line            | Type of Change | Description |
+|---------------------------|----------------|-------------|
+| `.card` CSS               | Modified       | Added `position: relative;` and `.card { padding-bottom: 48px !important; }` to make room for the Terms footer. |
+| CSS (added)               | Added          | Terms of Service modal and footer styles: `.terms-card-footer`, `.terms-link`, `#termsModal`, `#termsModalContent`, `#closeTermsModal`, etc. |
+| Main body/card markup     | Modified       | Wrapped `.card` in a flex column container for vertical centering and modal stacking. |
+| Main card markup          | Added          | Added Terms of Service footer inside the `.card` as `<div class="terms-card-footer" id="termsFooter">...<button class="terms-link" id="termsLink">Terms of Service</button>...</div>` |
+| End of body               | Added          | Added Terms of Service modal markup: `<div id="termsModal">...<div id="termsModalContent">...</div>...</div>` with modal content and close button. |
+| JS (DOMContentLoaded)     | Modified       | Added Terms modal logic: open/close on Terms link, close on overlay click, Esc key, and disables body scroll when open. |
+| JS (new functions)        | Added          | `setTermsFooterVisibility(show)` and `showLockAnimation(show)` to control Terms link visibility during lock animation. |
+| JS (login/logout)         | Modified       | Now uses `showLockAnimation(true/false)` to hide/show Terms link during lock animation. |
+| CSS (logo row, etc.)      | Unchanged      | No changes from previous version (logo/lock row and menu logic retained). |
+| JS (window.addEventListener) | Added      | On DOMContentLoaded, `setTermsFooterVisibility(true)` to ensure Terms footer is visible by default. |
+| All other logic           | Unchanged      | Password CRUD, encryption, menu, mousemove, etc. remain unchanged. |

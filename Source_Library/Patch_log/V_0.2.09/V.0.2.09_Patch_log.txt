@@ -1,0 +1,21 @@
+| Section / Line | Type of Change | Description |
+|----------------|----------------|-------------|
+| `<style>`      | Modified       | `.notification`: Added `z-index: 5000;` (was `z-index: 1000;`) |
+| `<style>`      | Modified       | `.slide-menu`: Changed `transition: left 0.3s ease;` to `transition: left 0.3s;` |
+| `<style>`      | Modified       | `.menu-toggle`: Now `display: none !important;` instead of being flexibly shown/hidden |
+| `<style>`      | Added          | `.logo-row`, `.logo-lock` styles for new logo/menu access |
+| `<body>`       | Modified       | Removed `<div class="menu-toggle" id="menuToggle" ...>` (menu burger icon removed) |
+| `<div id="loginForm">` | Modified | Input placeholders changed from "Username" to "Email" |
+| `<div id="signupForm">` | Modified | Input placeholders changed from "Username" to "Email" |
+| `<div id="passwordManager">` | Added | New logo row with lock emoji: `<div class="logo-row mb-4">...</div>` |
+| `<script>`     | Modified       | On window load, no longer shows/hides menu toggle. No reference to menu toggle anymore. |
+| `<script>`     | Added          | DOMContentLoaded event removes menu toggle if present, adds event listeners to lock emoji for opening menu (both click and keyboard) |
+| `<script>`     | Added          | Email and password validation helpers: `isValidEmail`, `isValidPassword` |
+| `signup()`     | Modified       | Now requires valid email format and minimum 8-char password. Error messages updated. |
+| `login()`      | Modified       | Now requires valid email format. Error messages updated. |
+| `toggleForm()` | Modified       | No longer touches menu toggle display. |
+| `toggleLoginForm()` | Modified  | No longer touches menu toggle display. |
+| Slide menu     | Changed        | Now toggled by lock emoji in logo row, not by menu toggle. |
+| `<script>`     | Modified       | All references to menu toggle (show/hide, display:flex) removed everywhere. |
+| `toggleMenu`/`closeMenu` | Modified | Now only affects slide menu; no more toggle of menu toggle. |
+| `escapeHtml()` | Bugfix         | Fixes regex to not include `{` in character group. (from `[&<>"]{` to `[&<>"]`) |

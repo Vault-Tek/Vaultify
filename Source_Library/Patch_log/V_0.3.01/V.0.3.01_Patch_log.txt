@@ -1,0 +1,13 @@
+| Section / Line                     | Type of Change | Description |
+|------------------------------------|----------------|-------------|
+| `.card`, `.card-effect` CSS        | Modified/Added | Kept original `.card` 3D effect setup. Added `.card-effect` for Terms modal to ensure visually identical style and transitions. |
+| 3D Effect Calculation (JS)         | Updated        | Refactored 3D card effect logic so both `.card` and modal use the exact same handler and math, based on window mouse position. |
+| 3D Rotation Clamping (JS)          | Added          | Introduced a `clamp(val, min, max)` utility and updated all 3D effect calculations to limit rotation to ±10 degrees, preventing unnatural spinning when the mouse is near window edges. |
+| Modal 3D Logic                     | Modified       | Removed modal-specific mousemove math; now both main card and modal use the same clamp logic and window-based coordinates. |
+| 3D Effect Reset (JS)               | Added          | Added `resetCardEffect` and `resetAllCardEffects` to clear transforms when modals/cards are hidden or closed. Called from all modal close actions. |
+| Mousemove Handler (JS)             | Modified       | Now uses a single `window.addEventListener('mousemove', ...)` handler which checks which card is active (main or modal) and applies the effect to only one at a time. |
+| Terms Modal Open/Close (JS)        | Modified       | Ensured modal always resets its 3D transform effect on close (overlay click, Esc, or close button). |
+| Terms Modal Markup/CSS             | Unchanged      | Modal container and styling for Terms of Service remain as previously set up. |
+| Main Card Markup/CSS               | Unchanged      | Structure and styles for login, signup, and manager cards remain unchanged. |
+| App Logic (CRUD, encryption, etc.) | Unchanged      | All password manager features, session, and crypto code remain unchanged. |
+| Patch summary                      | Added (this log) | Provided a detailed, line-by-line patch log summarizing all effect and usability improvements for this release. |

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vaultify - Password Manager (Multi-Account, Hardened)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Optional: zxcvbn for strength meter (fallback included below) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+  <style>
+    .card { transform-style: preserve-3d; transition: transform 0.1s ease-out; position: relative;}
+    .password-container { max-height: 300px; overflow-y: scroll; scrollbar-width: none; }
+    .password-container::-webkit-scrollbar { display: none; }
+    .search-container { display: none; margin-top: 10px; }
+    .password-container li { background-color: #1F2937; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .btn { background-color: #2d3748; color: #edf2f7; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; margin: 0 4px; border: none; cursor: pointer; }
+    .btn-view,.btn-edit,.btn-delete { background-color: #2d3748; }
+    .action-btns { display: flex; justify-content: flex-start; align-items: center; }
+    .action-btns button { margin-right: 5px; }
+    .no-match-card { background-color: #1F2937; padding: 12px; border-radius: 8px; text-align: center; margin-top: 10px; color: #edf2f7; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .notification { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background-color: #1F2937; color: #edf2f7; padding: 12px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 9999; display:none;}
+    .error { background-color: #7f1d1d; }
+    .lock-animation { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; font-size: 3rem; animation: lockAnimation 2s infinite;}
+    @keyframes lockAnimation { 0% { transform: translate(-50%, -50%) scale(1);} 50% { transform: translate(-50%, -50%) scale(1.2);} 100% { transform: translate(-50%, -50%) scale(1);} }
+    .hidden { display: none; }
+    .slide-menu { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background-color: #1F2937; color: #edf2f7; padding: 20px; box-shadow: 2px 0 5px rgba(0,0,0,0.5); transition: left 0.3s;}
+    .slide-menu.open { left: 0; }
+    .menu-option { cursor: pointer; padding: 10px; border-radius: 4px; transition: background-color 0.3s;}
+    .menu-option:hover { background-color: #2d3748; }
+    .logo-row { display: flex; align-items: center; justify-content: center; }
+    .logo-row .logo-lock { cursor: pointer; margin-left: 0.5rem; }
+    .logo-row .logo-lock:focus { outline: 2px solid #4299e1; }
+    .terms-card-footer {
+      width: 100%;
+      background: #1F2937;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 0 0 0.5rem 0.5rem;
+      min-height: 36px;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      z-index: 2;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.09);
+      pointer-events: none;
+      transition: background 0.2s;
+    }
+    .terms-link {
+      font-size: 0.75rem;
+      color: #a0aec0;
+      text-decoration: underline;
+      cursor: pointer;
+      margin: 0.2em 0;
+      pointer-events: auto;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    .terms-link:hover { color: #4299e1; }
+    #termsModal {
+      display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7); justify-content: center; align-items: center;
+    }
+    #termsModal.open { display: flex; }
+    #termsModalContent {
+      background: #23272e; color: #fff; max-width: 500px; width: 94vw; max-height: 80vh; overflow-y: auto;
+      border-radius: 10px; padding: 2rem 1.5rem 1.5rem 1.5rem; position: relative;
+      box-shadow: 0 2px 16px 0 rgba(0,0,0,0.7); scrollbar-width: none;
+    }
+    #termsModalContent::-webkit-scrollbar { display: none; }
+    #closeTermsModal { position: absolute; right: 1.2rem; top: 1.1rem; font-size: 1.5rem; color: #aaa;
+      background: none; border: none; cursor: pointer; transition: color 0.2s; }
+    #closeTermsModal:hover { color: #fff; }
+    @media (max-width: 640px) {
+      #termsModalContent { max-width: 96vw; padding: 1rem 0.5rem 0.5rem 0.5rem;}
+    }
+    .card { padding-bottom: 48px !important; }
+    .card-effect {
+      transform-style: preserve-3d; transition: transform 0.1s ease-out; position: relative;
+      padding-bottom: 48px !important; background: #1F2937 !important;
+      border-radius: 0.75rem; box-shadow: 0 2px 16px 0 rgba(0,0,0,0.7);
+    }
+    /* Password strength meter */
+    .strength-bar-bg { background: #2d3748; width: 100%; height: 8px; border-radius: 5px; margin-top: 3px;}
+    .strength-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s;}
+    .strength-0 { width: 0%; background: #7f1d1d;}
+    .strength-1 { width: 25%; background: #dc2626;}
+    .strength-2 { width: 50%; background: #f59e42;}
+    .strength-3 { width: 75%; background: #fbbf24;}
+    .strength-4 { width: 100%; background: #22c55e;}
+    /* .strength-label { font-size: 0.8rem; margin-top: 2px; color: #a0aec0;} -- removed, not used */
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex justify-center items-center h-screen" onclick="closeMenu(event)">
+  <div id="notification" class="notification">Success</div>
+  <div id="errorNotification" class="notification error">Error</div>
+  <div id="lockAnimation" class="lock-animation hidden">🔒</div>
+  <div class="slide-menu" id="slideMenu">
+    <div class="menu-option" onclick="exportData()">Export Data</div>
+    <div class="menu-option" onclick="importData()">Import Data</div>
+    <div class="menu-option" onclick="logOut()">Log Out</div>
+  </div>
+  <div style="display: flex; flex-direction: column; align-items: center;">
+    <div class="w-96 p-6 bg-gray-800 rounded-lg shadow-lg card" id="mainCard">
+      <div id="loginForm" class="login-container flex flex-col items-center">
+        <h2 class="text-xl font-bold mb-4 text-center">Login to Vaultify 🔒</h2>
+        <input id="loginUsername" type="text" placeholder="Email" class="input-field w-full p-2 mb-2 rounded bg-gray-700 text-white" autocomplete="username" />
+        <input id="loginPassword" type="password" placeholder="Password" class="input-field w-full p-2 mb-2 rounded bg-gray-700 text-white" autocomplete="current-password" />
+        <button onclick="login()" class="login-btn w-full bg-blue-500 p-2 rounded mt-2">Log In</button>
+        <p class="mt-2 text-center text-gray-400">Don't have an account? <span onclick="toggleForm('signup')" class="cursor-pointer text-blue-400">Create an Account 🔑</span></p>
+        <div id="loginLockoutBar" class="mt-2 text-center text-red-500 hidden"></div>
+      </div>
+      <div id="signupForm" class="signup-container flex flex-col items-center hidden">
+        <h2 class="text-xl font-bold mb-4 text-center">Create an Account 🔑</h2>
+        <input id="signupUsername" type="text" placeholder="Email" class="input-field w-full p-2 mb-2 rounded bg-gray-700 text-white" autocomplete="username" />
+        <input id="signupPassword" type="password" placeholder="Password" class="input-field w-full p-2 mb-2 rounded bg-gray-700 text-white" autocomplete="new-password" oninput="updateStrengthBar('signupPassword', 'signupStrengthBar')" />
+        <div class="strength-bar-bg"><div id="signupStrengthBar" class="strength-bar-fill strength-0"></div></div>
+        <!-- strength label removed here -->
+        <button onclick="signup()" class="signup-btn w-full bg-blue-500 p-2 rounded mt-2">Sign Up</button>
+        <p class="mt-2 text-center text-gray-400">Already have an account? <span onclick="toggleForm('login')" class="cursor-pointer text-blue-400">Log In</span></p>
+      </div>
+      <div id="passwordManager" class="password-manager hidden">
+        <div class="logo-row mb-4">
+          <h2 class="text-xl font-bold text-center mb-0 flex-grow">Vaultify</h2>
+          <span class="logo-lock" tabindex="0" id="logoLock" title="Open menu" aria-label="Open menu">🔒</span>
+        </div>
+        <input id="site" type="text" placeholder="Website" class="w-full p-2 mb-2 rounded bg-gray-700 text-white" />
+        <input id="username" type="text" placeholder="Username" class="w-full p-2 mb-2 rounded bg-gray-700 text-white" />
+        <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 rounded bg-gray-700 text-white" oninput="updateStrengthBar('password','passwordStrengthBar')" />
+        <div class="strength-bar-bg"><div id="passwordStrengthBar" class="strength-bar-fill strength-0"></div></div>
+        <!-- strength label removed here -->
+        <button onclick="savePassword()" class="w-full bg-blue-500 p-2 rounded">Save</button>
+        <button onclick="togglePasswordList()" class="w-full bg-gray-700 p-2 rounded mt-4">Saved Passwords ▼</button>
+        <div id="passwordContainer" class="password-container bg-gray-700 rounded mt-2 p-2" style="display:none;">
+          <div id="searchContainer" class="search-container">
+            <input id="searchInput" type="text" placeholder="Search for website or username" class="w-full p-2 mb-2 rounded bg-gray-600 text-white" oninput="searchPasswords()" />
+          </div>
+          <ul id="passwordList" class="mt-2"></ul>
+          <div id="noMatchCard" class="no-match-card hidden">No passwords match your search</div>
+        </div>
+        <div class="mt-2 text-center text-sm text-blue-300" id="currentUserDisplay"></div>
+      </div>
+      <div class="terms-card-footer" id="termsFooter">
+        <button type="button" class="terms-link" id="termsLink">Terms of Service</button>
+      </div>
+    </div>
+  </div>
+  <!-- Terms Modal -->
+  <div id="termsModal">
+    <div id="termsModalContent" class="card-effect" style="font-family: 'Segoe UI', Arial, sans-serif; background: #1F2937;">
+      <button id="closeTermsModal" aria-label="Close Terms of Service">&times;</button>
+      <div style="text-align:center; margin-bottom: 1.1em;">
+        <span style="font-size:2.1rem; color:#4299e1;">🔒</span>
+        <h2 style="font-size:1.5rem; font-weight:700; color:#edf2f7; margin:0.5em 0 0.25em 0; letter-spacing:0.03em;">
+          Vaultify Password Manager
+        </h2>
+        <div style="font-size:1.08rem; color:#a0aec0; font-weight:500;">
+          Terms of Service
+        </div>
+      </div>
+      <div style="font-size: 1.01em; color: #e5e7eb; line-height: 1.7; padding-bottom:0.6em; max-width: 100%;">
+        <ol style="padding-left:1.2em; margin:0;">
+          <li style="margin-bottom:1.1em;">
+            <span style="font-weight:600; color:#93c5fd;">1. Acceptance of Terms</span><br>
+            By installing, accessing, or using Vaultify Password Manager (“Vaultify,” “we,” “our,” or “us”), you agree to be bound by these Terms of Service (“Terms”) and our Privacy Policy.
+          </li>
+          <li style="margin-bottom:1.1em;">
+            <span style="font-weight:600; color:#93c5fd;">2. Scope of Services</span><br>
+            Vaultify provides a password management platform designed to assist users in storing, securing, and accessing digital credentials. Our Services may include, without limitation: information storage, encryption, and user authentication.
+          </li>
+          <li style="margin-bottom:1.1em;">
+            <span style="font-weight:600; color:#93c5fd;">3. Data Collection and Processing</span><br>
+            By using Vaultify, you consent to our collection, storage, processing, and transmission of user information. All sensitive data is encrypted locally; no data is sent to our servers.
+          </li>
+          <li style="margin-bottom:1.1em;">
+            <span style="font-weight:600; color:#93c5fd;">4. Security and Encryption</span><br>
+            Vaultify employs industry-standard cryptographic methods, including AES-256 and PBKDF2, to protect user information. However, no system is infallible. Users acknowledge that security is a shared responsibility.
+          </li>
+          <li style="margin-bottom:1.1em;">
+            <span style="font-weight:600; color:#93c5fd;">5. User Responsibilities</span><br>
+            Users agree not to misuse the Services, attempt to disable security mechanisms, reverse engineer software components, or interfere with system performance. Vaultify may, at its sole discretion, restrict access for violations.
+          </li>
+          <li style="margin-bottom:0.8em;">
+            <span style="font-weight:600; color:#93c5fd;">6. Governing Law and Modifications</span><br>
+            These Terms are governed by the laws of the State of Maine, United States, and the City of Auburn, Androscoggin County. Vaultify reserves the right to amend or update these Terms at any time.
+          </li>
+        </ol>
+        <div style="margin-top:2.2em; color:#60a5fa; font-size:0.99em; text-align:center;">
+          <em>Last updated: August 20, 2025<br>Vault Tek Industries, United States</em>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // =========================
+    // HARDENED CRYPTO (WebCrypto)
+    // =========================
+    const KDF_ITERATIONS = 250000;
+    const KDF_SALT_BYTES = 16;
+    const IV_BYTES = 12;
+    const MAX_FAILED_ATTEMPTS = 5;
+    const LOCKOUT_TIME_MS = 5 * 60 * 1000; // 5 minutes
+
+    let masterKey = null;
+    let currentUser = null;
+    let editingIndex = -1;
+    let viewedIndices = new Set();
+
+    function randomBytes(len) {
+      const arr = new Uint8Array(len);
+      crypto.getRandomValues(arr);
+      return arr;
+    }
+    function bufToBase64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+    function base64ToBuf(b64) { return Uint8Array.from(atob(b64), c => c.charCodeAt(0)); }
+    async function sha256(buf) { const d = await crypto.subtle.digest('SHA-256', buf); return new Uint8Array(d); }
+    async function deriveKey(password, salt, iterations = KDF_ITERATIONS) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey', 'deriveBits']
+      );
+      const key = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+      return key;
+    }
+    async function exportKeyRaw(key) {
+      const raw = await crypto.subtle.exportKey('raw', key);
+      return new Uint8Array(raw);
+    }
+    async function encryptText(plaintext, key) {
+      const iv = randomBytes(IV_BYTES);
+      const enc = new TextEncoder();
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plaintext));
+      return { iv: bufToBase64(iv), data: bufToBase64(ct) };
+    }
+    async function decryptText(obj, key) {
+      const iv = base64ToBuf(obj.iv);
+      const ct = base64ToBuf(obj.data);
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+      const dec = new TextDecoder();
+      return dec.decode(pt);
+    }
+    // ---------- MULTI-ACCOUNT SUPPORT ----------
+    function getAllAccountsConfig() {
+      // All account configs stored in: localStorage['vault_accounts']
+      const raw = localStorage.getItem('vault_accounts');
+      return raw ? JSON.parse(raw) : {};
+    }
+    function setAllAccountsConfig(cfg) {
+      localStorage.setItem('vault_accounts', JSON.stringify(cfg));
+    }
+    function getAccountConfig(username) {
+      const all = getAllAccountsConfig();
+      return all[username] || null;
+    }
+    function setAccountConfig(username, cfg) {
+      const all = getAllAccountsConfig();
+      all[username] = cfg;
+      setAllAccountsConfig(all);
+    }
+    function getUserPasswordsKey(username) {
+      return `vault_passwords_${username}`;
+    }
+    function getUserLockoutKey(username) {
+      return `vault_lockout_${username}`;
+    }
+    // ---------- SESSION KEY ----------
+    async function cacheSessionKey(key, username) {
+      const raw = await exportKeyRaw(key);
+      sessionStorage.setItem('session_key', bufToBase64(raw));
+      sessionStorage.setItem('session_user', username);
+    }
+    async function loadSessionKey() {
+      const b64 = sessionStorage.getItem('session_key');
+      if (!b64) return null;
+      const raw = base64ToBuf(b64);
+      return await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+    }
+    function clearSessionKey() {
+      sessionStorage.removeItem('session_key');
+      sessionStorage.removeItem('session_user');
+    }
+    // ---------- LOGIN/LOCKOUT ----------
+    function getLockoutInfo(username) {
+      // Structure: { failed: n, until: timestamp, check: sha256(failed+until+username) }
+      const raw = localStorage.getItem(getUserLockoutKey(username));
+      if (!raw) return { failed: 0, until: 0, check: "" };
+      try {
+        const obj = JSON.parse(raw);
+        // Verify the hash, return empty if tampered
+        const expected = calcLockoutCheck(obj.failed, obj.until, username);
+        if (obj.check !== expected) return { failed: 0, until: 0, check: "" };
+        return obj;
+      } catch { return { failed: 0, until: 0, check: "" }; }
+    }
+    function setLockoutInfo(username, failed, until) {
+      const obj = { failed, until, check: calcLockoutCheck(failed, until, username) };
+      localStorage.setItem(getUserLockoutKey(username), JSON.stringify(obj));
+    }
+    function resetLockoutInfo(username) {
+      setLockoutInfo(username, 0, 0);
+    }
+    function calcLockoutCheck(failed, until, username) {
+      // Simple tamper check: sha256(failed + until + username)
+      const str = `${failed}|${until}|${username}`;
+      let hash = 0, i, chr;
+      for (i = 0; i < str.length; i++) { chr = str.charCodeAt(i); hash = ((hash << 5) - hash) + chr; hash |= 0; }
+      return hash.toString(16);
+    }
+    function showLockoutBar(msg) {
+      const bar = document.getElementById('loginLockoutBar');
+      bar.innerText = msg;
+      bar.classList.remove('hidden');
+    }
+    function hideLockoutBar() {
+      const bar = document.getElementById('loginLockoutBar');
+      bar.classList.add('hidden');
+      bar.innerText = "";
+    }
+    // ---------- UI UTILS ----------
+    function showNotification(message) {
+      const notification = document.getElementById('notification');
+      notification.innerText = message; notification.style.display = 'block';
+      setTimeout(() => { notification.style.display = 'none'; }, 3000);
+    }
+    function showErrorNotification(message) {
+      const errorNotification = document.getElementById('errorNotification');
+      errorNotification.innerText = message; errorNotification.style.display = 'block';
+      setTimeout(() => { errorNotification.style.display = 'none'; }, 3000);
+    }
+    function clearInputFields() {
+      ['loginUsername','loginPassword','signupUsername','signupPassword','site','username','password']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      updateStrengthBar('signupPassword', 'signupStrengthBar');
+      updateStrengthBar('password', 'passwordStrengthBar');
+    }
+    function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+    function isValidPassword(password) { return typeof password === 'string' && password.length >= 8; }
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return str;
+      return str.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    }
+    // ---------- PASSWORD STRENGTH ----------
+    function getPasswordStrength(password) {
+      // Try zxcvbn if available, else fallback estimator
+      if (window.zxcvbn) {
+        const r = window.zxcvbn(password);
+        return { score: r.score, feedback: r.feedback.suggestions.join(' '), label: ["Very Weak","Weak","Fair","Good","Strong"][r.score] };
+      } else {
+        // Fallback: length+variety
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+        if (password.length > 12) score++;
+        let s = Math.min(score, 4);
+        let label = ["Very Weak","Weak","Fair","Good","Strong"][s];
+        return { score: s, feedback: "", label };
+      }
+    }
+    // REMOVE LABEL: only update bar, never show label
+    function updateStrengthBar(inputId, barId) {
+      const pw = document.getElementById(inputId).value;
+      const { score } = getPasswordStrength(pw);
+      const bar = document.getElementById(barId);
+      for (let i = 0; i <= 4; ++i) bar.classList.remove(`strength-${i}`);
+      bar.classList.add(`strength-${score}`);
+      // label removed
+    }
+    // ---------- MAIN LOGIC ----------
+    window.onload = async function() {
+      // Attempt to restore session
+      masterKey = await loadSessionKey();
+      currentUser = sessionStorage.getItem('session_user');
+      if (masterKey && currentUser) {
+        toggleLoginForm();
+        updateCurrentUserDisplay();
+        await displayPasswords();
+      }
+    }
+    function toggleForm(formType) {
+      clearInputFields();
+      hideLockoutBar();
+      if (formType === 'login') {
+        document.getElementById('loginForm').style.display = 'flex';
+        document.getElementById('signupForm').style.display = 'none';
+      } else if (formType === 'signup') {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'flex';
+      }
+    }
+    function toggleLoginForm() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('passwordManager').style.display = 'block';
+    }
+    function updateCurrentUserDisplay() {
+      document.getElementById('currentUserDisplay').innerText = "Logged in as: " + (currentUser || "");
+    }
+    async function login() {
+      const loginUsername = document.getElementById('loginUsername').value.trim();
+      const loginPassword = document.getElementById('loginPassword').value;
+      if (!loginUsername || !loginPassword) {
+        showErrorNotification('Please enter both email and password');
+        return;
+      }
+      if (!isValidEmail(loginUsername)) {
+        showErrorNotification('Please enter a valid email address');
+        return;
+      }
+      // Lockout check
+      const lockout = getLockoutInfo(loginUsername);
+      const now = Date.now();
+      if (lockout.until && now < lockout.until) {
+        showLockoutBar(`Account locked due to too many failed logins. Try again in ${Math.ceil((lockout.until - now)/1000)} seconds.`);
+        return;
+      }
+      hideLockoutBar();
+      const cfg = getAccountConfig(loginUsername);
+      if (!cfg) {
+        incrementFailedLogin(loginUsername);
+        showErrorNotification('Invalid email or password');
+        return;
+      }
+      const salt = base64ToBuf(cfg.kdf.salt);
+      const key = await deriveKey(loginPassword, salt, cfg.kdf.iterations || KDF_ITERATIONS);
+      const keyRaw = await exportKeyRaw(key);
+      const hash = await sha256(keyRaw.buffer);
+      const ok = bufToBase64(hash) === cfg.verifier;
+      if (!ok) {
+        incrementFailedLogin(loginUsername);
+        showErrorNotification('Invalid email or password');
+        return;
+      }
+      // Success: reset lockout, login
+      resetLockoutInfo(loginUsername);
+      showLockAnimation(true);
+      setTimeout(async () => {
+        localStorage.setItem('loggedIn','true');
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('passwordManager').style.display = 'block';
+        masterKey = key;
+        currentUser = loginUsername;
+        await cacheSessionKey(masterKey, currentUser);
+        viewedIndices.clear();
+        updateCurrentUserDisplay();
+        await displayPasswords();
+        showLockAnimation(false);
+        showNotification('Logged in successfully');
+      }, 1500);
+    }
+    function incrementFailedLogin(username) {
+      // Increase failed count, lock out if needed
+      let lockout = getLockoutInfo(username);
+      let failed = (lockout.failed || 0) + 1;
+      let until = 0;
+      if (failed >= MAX_FAILED_ATTEMPTS) {
+        until = Date.now() + LOCKOUT_TIME_MS;
+        showLockoutBar(`Account locked for ${Math.ceil(LOCKOUT_TIME_MS/60000)} minutes due to failed attempts.`);
+        failed = 0;
+      }
+      setLockoutInfo(username, failed, until);
+    }
+    function logOut() {
+      const slideMenu = document.getElementById('slideMenu');
+      slideMenu.classList.remove('open');
+      setTimeout(() => {
+        showLockAnimation(true);
+        setTimeout(() => {
+          clearInputFields();
+          document.getElementById('loginForm').style.display = 'flex';
+          document.getElementById('signupForm').style.display = 'none';
+          document.getElementById('passwordManager').style.display = 'none';
+          document.getElementById('passwordContainer').style.display = 'none';
+          document.getElementById('noMatchCard').classList.add('hidden');
+          viewedIndices.clear(); editingIndex = -1;
+          localStorage.setItem('loggedIn','false');
+          masterKey = null; clearSessionKey();
+          currentUser = null;
+          updateCurrentUserDisplay();
+          showLockAnimation(false);
+          showNotification('Logged out successfully');
+        }, 1500);
+      }, 300);
+    }
+    async function signup() {
+      const signupUsername = document.getElementById('signupUsername').value.trim();
+      const signupPassword = document.getElementById('signupPassword').value;
+      if (!signupUsername || !signupPassword) {
+        showErrorNotification('Please enter both email and password');
+        return;
+      }
+      if (!isValidEmail(signupUsername)) {
+        showErrorNotification('Please enter a valid email address');
+        return;
+      }
+      if (!isValidPassword(signupPassword)) {
+        showErrorNotification('Password must be at least 8 characters');
+        return;
+      }
+      // Check not already exists
+      if (getAccountConfig(signupUsername)) {
+        showErrorNotification('Account already exists');
+        return;
+      }
+      // Password strength check
+      if (getPasswordStrength(signupPassword).score < 2) {
+        showErrorNotification('Please use a stronger password');
+        return;
+      }
+      const salt = randomBytes(KDF_SALT_BYTES);
+      const key = await deriveKey(signupPassword, salt);
+      const keyRaw = await exportKeyRaw(key);
+      const verifier = await sha256(keyRaw.buffer);
+      setAccountConfig(signupUsername, {
+        version: 1,
+        username: signupUsername,
+        kdf: { salt: bufToBase64(salt), iterations: KDF_ITERATIONS },
+        verifier: bufToBase64(verifier)
+      });
+      localStorage.setItem(getUserPasswordsKey(signupUsername), JSON.stringify([]));
+      resetLockoutInfo(signupUsername);
+      clearInputFields();
+      toggleForm('login');
+      showNotification('Account created successfully');
+    }
+    async function savePassword() {
+      if (!currentUser) return;
+      const site = document.getElementById('site').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!site || !username || !password) return;
+      if (!masterKey) { showErrorNotification('Session locked. Please log in again.'); return; }
+      const entryPlain = JSON.stringify({ site, username, password });
+      const encObj = await encryptText(entryPlain, masterKey);
+      let passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      const storedEntry = { iv: encObj.iv, data: encObj.data };
+      if (editingIndex === -1) { passwords.push(storedEntry); } else { passwords[editingIndex] = storedEntry; editingIndex = -1; }
+      localStorage.setItem(getUserPasswordsKey(currentUser), JSON.stringify(passwords));
+      await displayPasswords();
+      clearInputFields();
+    }
+    async function displayPasswords() {
+      const passwordList = document.getElementById('passwordList');
+      passwordList.innerHTML = '';
+      if (!currentUser) return;
+      const passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      for (let index = 0; index < passwords.length; index++) {
+        let decryptedSite = '🔒 Locked';
+        let decryptedUsername = '🔒 Locked';
+        let passwordMasked = '*'.repeat(8);
+        if (masterKey) {
+          try {
+            const obj = passwords[index];
+            const json = await decryptText(obj, masterKey);
+            const parsed = JSON.parse(json);
+            decryptedSite = parsed.site;
+            decryptedUsername = parsed.username;
+          } catch (e) {
+            decryptedSite = '⚠️ Corrupt entry';
+            decryptedUsername = '';
+          }
+        }
+        passwordList.innerHTML += `
+          <li class='bg-gray-800 p-2 rounded mt-2 flex flex-col'>
+            <div class='flex justify-between items-center'>
+              <strong>${escapeHtml(decryptedSite)}</strong>
+              <button onclick='togglePasswordDetails(${index})' class='btn btn-view' id='toggleBtn-${index}'>${viewedIndices.has(index) ? '🔓' : '🔒'}</button>
+            </div>
+            <div id='details-${index}' class='${viewedIndices.has(index) ? '' : 'hidden'}'>
+              <div>Username: ${escapeHtml(decryptedUsername)}</div>
+              <div>Password: <span id='password-${index}'>${passwordMasked}</span></div>
+              <div class='action-btns'>
+                <button onclick='revealPassword(${index})' class='btn btn-view' id='viewBtn-${index}'>View</button>
+                <button onclick='editPassword(${index})' class='btn btn-edit hidden' id='editBtn-${index}'>✏️</button>
+                <button onclick='deletePassword(${index})' class='btn btn-delete' id='deleteBtn-${index}'>🗑</button>
+              </div>
+            </div>
+          </li>`;
+      }
+    }
+    function togglePasswordDetails(index) {
+      const details = document.getElementById(`details-${index}`);
+      const toggleBtn = document.getElementById(`toggleBtn-${index}`);
+      const passwordField = document.getElementById(`password-${index}`);
+      const viewBtn = document.getElementById(`viewBtn-${index}`);
+      const editBtn = document.getElementById(`editBtn-${index}`);
+      const deleteBtn = document.getElementById(`deleteBtn-${index}`);
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden'); toggleBtn.innerText = '🔓'; viewedIndices.add(index);
+      } else {
+        details.classList.add('hidden'); toggleBtn.innerText = '🔒'; passwordField.innerText = '*'.repeat(8);
+        viewBtn.innerText = 'View'; editBtn.classList.add('hidden'); deleteBtn.classList.remove('hidden'); viewedIndices.delete(index);
+      }
+    }
+    async function revealPassword(index) {
+      if (!masterKey || !currentUser) { showErrorNotification('Session locked. Please log in again.'); return; }
+      let passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      const passwordField = document.getElementById(`password-${index}`);
+      const viewBtn = document.getElementById(`viewBtn-${index}`);
+      const deleteBtn = document.getElementById(`deleteBtn-${index}`);
+      const editBtn = document.getElementById(`editBtn-${index}`);
+      if (passwordField.innerText.includes('*')) {
+        try {
+          const obj = passwords[index];
+          const json = await decryptText(obj, masterKey);
+          const parsed = JSON.parse(json);
+          passwordField.innerText = parsed.password;
+          viewBtn.innerText = 'Hide'; editBtn.classList.remove('hidden'); deleteBtn.classList.add('hidden'); viewedIndices.add(index);
+        } catch (e) { showErrorNotification('Unable to decrypt.'); }
+      } else {
+        passwordField.innerText = '*'.repeat(8);
+        viewBtn.innerText = 'View'; editBtn.classList.add('hidden'); deleteBtn.classList.remove('hidden'); viewedIndices.delete(index);
+      }
+    }
+    async function deletePassword(index) {
+      if (!currentUser) return;
+      let passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      passwords.splice(index, 1);
+      viewedIndices.delete(index);
+      localStorage.setItem(getUserPasswordsKey(currentUser), JSON.stringify(passwords));
+      await displayPasswords();
+    }
+    async function editPassword(index) {
+      if (!masterKey || !currentUser) { showErrorNotification('Session locked. Please log in again.'); return; }
+      let passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      try {
+        const obj = passwords[index];
+        const json = await decryptText(obj, masterKey);
+        const parsed = JSON.parse(json);
+        document.getElementById('site').value = parsed.site;
+        document.getElementById('username').value = parsed.username;
+        document.getElementById('password').value = parsed.password;
+        updateStrengthBar('password','passwordStrengthBar');
+        editingIndex = index;
+        document.getElementById('password').type = 'password';
+      } catch (e) { showErrorNotification('Unable to decrypt.'); }
+    }
+    function togglePasswordList() {
+      const container = document.getElementById('passwordContainer');
+      const searchContainer = document.getElementById('searchContainer');
+      const noMatchCard = document.getElementById('noMatchCard');
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      searchContainer.style.display = container.style.display === 'block' ? 'block' : 'none';
+      if (container.style.display === 'none') {
+        document.getElementById('searchInput').value = '';
+        noMatchCard.classList.add('hidden');
+        viewedIndices.clear();
+        displayPasswords();
+      }
+    }
+    async function searchPasswords() {
+      if (!currentUser) return;
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const passwordList = document.getElementById('passwordList');
+      const passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      const noMatchCard = document.getElementById('noMatchCard');
+      passwordList.innerHTML = ''; noMatchCard.classList.add('hidden');
+      if (!masterKey) { noMatchCard.classList.remove('hidden'); return; }
+      let matchFound = false;
+      for (let index = 0; index < passwords.length; index++) {
+        try {
+          const json = await decryptText(passwords[index], masterKey);
+          const parsed = JSON.parse(json);
+          if (parsed.site.toLowerCase().includes(q) || parsed.username.toLowerCase().includes(q)) {
+            matchFound = true;
+            const revealed = viewedIndices.has(index);
+            passwordList.innerHTML += `
+              <li class='bg-gray-800 p-2 rounded mt-2 flex flex-col'>
+                <div class='flex justify-between items-center'>
+                  <strong>${escapeHtml(parsed.site)}</strong>
+                  <button onclick='togglePasswordDetails(${index})' class='btn btn-view' id='toggleBtn-${index}'>${revealed ? '🔓' : '🔒'}</button>
+                </div>
+                <div id='details-${index}' class='${revealed ? '' : 'hidden'}'>
+                  <div>Username: ${escapeHtml(parsed.username)}</div>
+                  <div>Password: <span id='password-${index}'>${revealed ? parsed.password : '*'.repeat(8)}</span></div>
+                  <div class='action-btns'>
+                    <button onclick='revealPassword(${index})' class='btn btn-view' id='viewBtn-${index}'>${revealed ? 'Hide' : 'View'}</button>
+                    <button onclick='editPassword(${index})' class='btn btn-edit ${revealed ? '' : 'hidden'}' id='editBtn-${index}'>✏️</button>
+                    <button onclick='deletePassword(${index})' class='btn btn-delete' id='deleteBtn-${index}'>🗑</button>
+                  </div>
+                </div>
+              </li>`;
+          }
+        } catch (e) { /* skip corrupt entries */ }
+      }
+      if (!matchFound) { noMatchCard.classList.remove('hidden'); }
+    }
+    function toggleMenu(event) {
+      event.stopPropagation();
+      const slideMenu = document.getElementById('slideMenu');
+      slideMenu.classList.toggle('open');
+    }
+    function closeMenu(event) {
+      const slideMenu = document.getElementById('slideMenu');
+      if (!slideMenu.contains(event.target) && slideMenu.classList.contains('open')) {
+        slideMenu.classList.remove('open');
+      }
+    }
+    function exportData() {
+      if (!currentUser) return;
+      let passwords = JSON.parse(localStorage.getItem(getUserPasswordsKey(currentUser))) || [];
+      const blob = new Blob([JSON.stringify(passwords)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'passwords.json';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      closeMenu({ target: document.body });
+    }
+    function importData() {
+      if (!currentUser) return;
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'application/json';
+      input.onchange = async (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const passwords = JSON.parse(e.target.result);
+            if (!Array.isArray(passwords)) throw new Error('Invalid file');
+            localStorage.setItem(getUserPasswordsKey(currentUser), JSON.stringify(passwords));
+            await displayPasswords();
+          } catch { showErrorNotification('Invalid import file'); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+      closeMenu({ target: document.body });
+    }
+    // Terms modal logic
+    document.addEventListener('DOMContentLoaded', function () {
+      const logoLock = document.getElementById('logoLock');
+      if (logoLock) {
+        logoLock.addEventListener('click', function (e) {
+          e.stopPropagation();
+          toggleMenu(e);
+        });
+        logoLock.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault(); e.stopPropagation();
+            toggleMenu(e);
+          }
+        });
+      }
+      // Terms of Service modal logic
+      const termsLink = document.getElementById('termsLink');
+      const termsModal = document.getElementById('termsModal');
+      const closeTermsModal = document.getElementById('closeTermsModal');
+      termsLink.addEventListener('click', function(e){
+        e.preventDefault();
+        termsModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+      closeTermsModal.addEventListener('click', function(){
+        termsModal.classList.remove('open');
+        document.body.style.overflow = '';
+        resetAllCardEffects();
+      });
+      termsModal.addEventListener('click', function(e){
+        if (e.target === termsModal) {
+          termsModal.classList.remove('open');
+          document.body.style.overflow = '';
+          resetAllCardEffects();
+        }
+      });
+      document.addEventListener('keydown', function(e){
+        if (termsModal.classList.contains('open') && (e.key === 'Escape')) {
+          termsModal.classList.remove('open');
+          document.body.style.overflow = '';
+          resetAllCardEffects();
+        }
+      });
+      setTermsFooterVisibility(true);
+    });
+    // Hide Terms link during lock animation
+    function setTermsFooterVisibility(show) {
+      var tf = document.getElementById('termsFooter');
+      if (tf) tf.style.display = show ? '' : 'none';
+    }
+    function showLockAnimation(show) {
+      var lockAnimation = document.getElementById('lockAnimation');
+      var mainCard = document.getElementById('mainCard');
+      if (show) {
+        setTermsFooterVisibility(false);
+        mainCard.classList.add('hidden');
+        lockAnimation.classList.remove('hidden');
+      } else {
+        lockAnimation.classList.add('hidden');
+        setTermsFooterVisibility(true);
+        mainCard.classList.remove('hidden');
+      }
+    }
+    // 3D Card effect for fun polish
+    function clamp(val, min, max) { return Math.max(min, Math.min(val, max)); }
+    function applyCardEffect(card, event) {
+      if (!card) return;
+      const { clientX: x, clientY: y } = event;
+      const { innerWidth: width, innerHeight: height } = window;
+      let moveX = ((x - width / 2) / width) * 20;
+      let moveY = ((y - height / 2) / height) * 20;
+      moveX = clamp(moveX, -10, 10);
+      moveY = clamp(moveY, -10, 10);
+      card.style.transform = `rotateX(${moveY}deg) rotateY(${moveX}deg)`;
+    }
+    function resetCardEffect(card) { if (card) card.style.transform = ''; }
+    function resetAllCardEffects() {
+      resetCardEffect(document.getElementById('mainCard'));
+      resetCardEffect(document.getElementById('termsModalContent'));
+    }
+    window.addEventListener('mousemove', function(event) {
+      const termsModal = document.getElementById('termsModal');
+      const modalCard = document.getElementById('termsModalContent');
+      const mainCard = document.getElementById('mainCard');
+      if (termsModal && termsModal.classList.contains('open')) {
+        applyCardEffect(modalCard, event); resetCardEffect(mainCard);
+      } else {
+        applyCardEffect(mainCard, event); resetCardEffect(modalCard);
+      }
+    });
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        if (document.getElementById('loginForm').style.display !== 'none') { login(); }
+        else if (document.getElementById('signupForm').style.display !== 'none') { signup(); }
+        else if (document.getElementById('passwordManager').style.display !== 'none') { savePassword(); }
+      }
+    });
+  </script>
+</body>
+</html>

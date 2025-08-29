@@ -1,0 +1,41 @@
+## Patch Log – Password Strength Label Removal & UI Simplification
+
+**Overview:**
+This patch removes all password strength *text label* functionality from Vaultify and transitions the password strength indicator to a minimalist, bar-only system. The app now communicates password strength purely through the visual strength bar (width + color), with no labels, scores, or feedback text shown anywhere in the UI. All encryption, CRUD operations, session management, and other app logic remain unchanged.
+
+---
+
+### Signup Form (HTML)
+
+* Removed the `<div id="signupStrengthLabel" class="strength-label"></div>` element that previously displayed password strength text.
+* The signup password input field’s `oninput` attribute was updated so it now only calls `updateStrengthBar('signupPassword','signupStrengthBar')`.
+* The strength bar element remains beneath the password input, but no label or text feedback is rendered.
+
+### Password Manager Form (HTML)
+
+* Removed the `<div id="passwordStrengthLabel" class="strength-label"></div>` element from the add/edit password modal.
+* The password field’s `oninput` attribute was updated to only call `updateStrengthBar('password','passwordStrengthBar')`.
+* The bar still provides a color/width indicator for strength, but no descriptive text is displayed.
+
+### CSS Changes
+
+* Deleted the `.strength-label` CSS rule entirely since it is no longer referenced anywhere in the code.
+* Retained and refined `.strength-bar-bg`, `.strength-bar-fill`, and `.strength-[0–4]` classes. These continue to define the size, fill, and color transitions of the password strength bar.
+
+### JavaScript – Strength Calculation & UI
+
+* **`getPasswordStrength`:** Still evaluates strength using **zxcvbn** if available (with fallback logic). It technically returns `score`, `label`, and `feedback`, but in this version, only the `score` is used. Labels and feedback are ignored.
+* **`updateStrengthBar`:** Simplified to accept only `inputId` and `barId`. The `labelId` parameter and all label update logic were removed. The function now exclusively updates the bar’s class based on strength score, altering color and fill width to visually represent strength.
+* **All calls to `updateStrengthBar`:** Updated throughout the app (signup form, password manager form, `clearInputFields`, and edit password logic) to pass only input and bar IDs. No label arguments are ever used.
+* **`clearInputFields`:** Modified so that when fields are reset, the corresponding strength bar is also reset to its default empty state (no text to clear).
+
+### Password Strength UI Behavior
+
+* Password strength feedback is now **visual-only**. Users see a bar that adjusts in color (weak → strong) and width according to password strength, but no text such as “Weak,” “Strong,” or suggestions appear.
+* This results in a cleaner, minimalist user experience across both the signup form and password manager form.
+
+### Unchanged Sections
+
+* **Core App Logic:** All encryption (AES-GCM, PBKDF2 key derivation), CRUD operations, account/session management, multi-account handling, and lockout protections remain intact and unchanged.
+* **UI Effects:** 3D card flipping effects, modal overlays, and main layout styling remain untouched.
+* **Terms Modal:** Terms of Service modal, markup, and event handling are unaffected
